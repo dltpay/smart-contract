@@ -1,0 +1,19 @@
+{
+  "name": "dltpay",
+  "version": "1.0.0",
+  "description": "DLTPay Token",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@eth-optimism/contracts": "^0.5.40",
+    "@openzeppelin/contracts": "^4.8.3"
+  }
+}
