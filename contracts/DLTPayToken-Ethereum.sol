@@ -9,8 +9,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant MULTICHAIN_BRIDGE_ROLE =
-        keccak256("MULTICHAIN_BRIDGE_ROLE");
+    bytes32 public constant BRIDGE_ROLE = keccak256("BRIDGE_ROLE");
 
     // ---------------------------------------------------------------- //
     // Support for anyswap/multichain.org
@@ -32,7 +31,7 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     function mint(
         address to,
         uint256 amount
-    ) public onlyRole(MULTICHAIN_BRIDGE_ROLE) returns (bool) {
+    ) public onlyRole(BRIDGE_ROLE) returns (bool) {
         _mint(to, amount);
         return true;
     }
@@ -40,7 +39,7 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     function burn(
         address from,
         uint256 amount
-    ) external onlyRole(MULTICHAIN_BRIDGE_ROLE) returns (bool) {
+    ) external onlyRole(BRIDGE_ROLE) returns (bool) {
         _burn(from, amount);
         return true;
     }
@@ -50,7 +49,7 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
         bytes32 txhash,
         address account,
         uint256 amount
-    ) external onlyRole(MULTICHAIN_BRIDGE_ROLE) returns (bool) {
+    ) external onlyRole(BRIDGE_ROLE) returns (bool) {
         _mint(account, amount);
         emit LogSwapin(txhash, account, amount);
         return true;

@@ -14,6 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "@eth-optimism/contracts": "^0.5.40",
+    "@eth-optimism/contracts-bedrock": "^0.13.2",
     "@openzeppelin/contracts": "^4.8.3"
   }
 }
