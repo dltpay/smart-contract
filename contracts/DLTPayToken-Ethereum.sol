@@ -6,10 +6,42 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1CustomGateway.sol";
+import "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+
+// ---------------------------------------------------------------- //
+// Support for arbitrum
+interface IL1CustomGateway {
+    function registerTokenToL2(
+        address _l2Address,
+        uint256 _maxGas,
+        uint256 _gasPriceBid,
+        uint256 _maxSubmissionCost,
+        address _creditBackAddress
+    ) external payable returns (uint256);
+}
+
+interface IGatewayRouter2 {
+    function setGateway(
+        address _gateway,
+        uint256 _maxGas,
+        uint256 _gasPriceBid,
+        uint256 _maxSubmissionCost,
+        address _creditBackAddress
+    ) external payable returns (uint256);
+}
+
+// ---------------------------------------------------------------- //
 
 contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant BRIDGE_ROLE = keccak256("BRIDGE_ROLE");
+
+    // ---------------------------------------------------------------- //
+    // Support for arbitrum
+    address public gateway;
+    address public router;
+    bool private shouldRegisterGateway;
 
     // ---------------------------------------------------------------- //
     // Support for anyswap/multichain.org
@@ -31,7 +63,7 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     function mint(
         address to,
         uint256 amount
-    ) public onlyRole(BRIDGE_ROLE) returns (bool) {
+    ) external onlyRole(BRIDGE_ROLE) returns (bool) {
         _mint(to, amount);
         return true;
     }
@@ -64,18 +96,79 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     }
 
     // ---------------------------------------------------------------- //
+    // Support for arbitrum
+    /// @dev we only set shouldRegisterGateway to true when in `registerTokenOnL2`
+    function isArbitrumEnabled() external view returns (uint8) {
+        require(shouldRegisterGateway, "NOT_EXPECTED_CALL");
+        return uint8(0xa4b1);
+    }
 
-    constructor() ERC20("DLTPAY", "DLTPAY") {
+    function registerTokenOnL2(
+        address l2CustomTokenAddress,
+        uint256 maxSubmissionCostForCustomGateway,
+        uint256 maxSubmissionCostForRouter,
+        uint256 maxGasForCustomGateway,
+        uint256 maxGasForRouter,
+        uint256 gasPriceBid,
+        uint256 valueForGateway,
+        uint256 valueForRouter,
+        address creditBackAddress
+    ) public payable onlyRole(DEFAULT_ADMIN_ROLE) {
+        // we temporarily set `shouldRegisterGateway` to true for the callback in registerTokenToL2 to succeed
+        bool prev = shouldRegisterGateway;
+        shouldRegisterGateway = true;
+
+        IL1CustomGateway(gateway).registerTokenToL2{value: valueForGateway}(
+            l2CustomTokenAddress,
+            maxGasForCustomGateway,
+            gasPriceBid,
+            maxSubmissionCostForCustomGateway,
+            creditBackAddress
+        );
+
+        IGatewayRouter2(router).setGateway{value: valueForRouter}(
+            gateway,
+            maxGasForRouter,
+            gasPriceBid,
+            maxSubmissionCostForRouter,
+            creditBackAddress
+        );
+
+        shouldRegisterGateway = prev;
+    }
+
+    function bridgeMint(
+        address account,
+        uint256 amount
+    ) public onlyRole(BRIDGE_ROLE) {
+        _mint(account, amount);
+    }
+
+    function bridgeBurn(
+        address account,
+        uint256 amount
+    ) public onlyRole(BRIDGE_ROLE) {
+        _burn(account, amount);
+    }
+
+    // ---------------------------------------------------------------- //
+
+    constructor(
+        address arb_router,
+        address arb_gateway
+    ) ERC20("DLTPAY", "DLTPAY") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         underlying = address(0);
+        router = arb_router;
+        gateway = arb_gateway;
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 

@@ -60,7 +60,7 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     function mint(
         address to,
         uint256 amount
-    ) public onlyRole(BRIDGE_ROLE) returns (bool) {
+    ) external onlyRole(BRIDGE_ROLE) returns (bool) {
         _mint(to, amount);
         emit Mint(to, amount);
         return true;
@@ -69,7 +69,7 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     function burn(
         address from,
         uint256 amount
-    ) public onlyRole(BRIDGE_ROLE) returns (bool) {
+    ) external onlyRole(BRIDGE_ROLE) returns (bool) {
         _burn(from, amount);
         emit Burn(from, amount);
         return true;
