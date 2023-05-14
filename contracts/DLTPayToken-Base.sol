@@ -34,6 +34,8 @@ interface IGatewayRouter2 {
 // ---------------------------------------------------------------- //
 
 contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant BRIDGE_ROLE = keccak256("BRIDGE_ROLE");
 
@@ -152,6 +154,15 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
     }
 
     // ---------------------------------------------------------------- //
+    // Support for celer-bridge
+    function burnFrom(
+        address _from,
+        uint256 _amount
+    ) external onlyRole(BRIDGE_ROLE) {
+        _burn(from, amount);
+    }
+
+    // ---------------------------------------------------------------- //
 
     constructor(
         address arb_router,
@@ -162,9 +173,6 @@ contract DLTPayToken is ERC20, ERC20Burnable, Pausable, AccessControl {
         underlying = address(0);
         router = arb_router;
         gateway = arb_gateway;
-    }
-
-    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
